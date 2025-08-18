@@ -1,0 +1,374 @@
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>hm</title>
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        background: #000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        overflow: hidden;
+    }
+    #gameContainer {
+        position: relative;
+        background: #5C94FC;
+    }
+    canvas {
+        display: block;
+    }
+    #ui, #modeSelect, #messageScreen, .dialogue-box {
+        position: absolute;
+        font-family: 'Courier New', monospace;
+        text-align: center;
+        color: white;
+    }
+    #ui {
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 5%;
+        box-sizing: border-box;
+        z-index: 2;
+    }
+    #ui h1 {
+        color: #ffff00;
+        text-shadow: 3px 3px 0px #000;
+        line-height: 1.2;
+        font-size: clamp(16px, 3vw, 30px);
+    }
+    #playBtn {
+        margin-top: 20px;
+        background: #ff6b6b;
+        color: white;
+        border: 3px solid #fff;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: clamp(14px, 2.5vw, 20px);
+        font-weight: bold;
+        padding: clamp(8px, 2vw, 15px) clamp(16px, 4vw, 30px);
+        transition: all 0.3s;
+        text-shadow: 2px 2px 0px #000;
+    }
+    #playBtn:hover { background: #ff5252; transform: scale(1.1); }
+
+    /* MODE SELECT STYLING */
+    #modeSelect {
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.9);
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 20px;
+        z-index: 2;
+    }
+    #modeSelect h1 {
+        color: #ffff00;
+        text-shadow: 3px 3px 0px #000;
+        font-size: clamp(16px, 3vw, 28px);
+        margin-bottom: 20px;
+    }
+    #modeSelect img {
+        width: 200px; height: auto;
+        border: 4px solid white;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    #modeSelect img:hover { transform: scale(1.1); }
+
+    .dialogue-box {
+        background: white;
+        border: 3px solid #000;
+        border-radius: 12px;
+        color: #000;
+        font-size: clamp(10px, 1.8vw, 16px);
+        font-weight: bold;
+        box-shadow: 4px 4px 8px rgba(0,0,0,0.5);
+        z-index: 3;
+        display: none;
+        padding: 6px 10px;
+    }
+    #messageScreen {
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.9);
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 8%;
+        box-sizing: border-box;
+        z-index: 3;
+    }
+    #messageScreen p {
+        color: #ffff00;
+        font-size: clamp(14px, 2.5vw, 24px);
+        text-shadow: 2px 2px 0px #000;
+        max-width: 90%;
+    }
+</style>
+</head>
+<body>
+<div id="gameContainer">
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui">
+        <h1>I too was about to drop a nonchalant "Happy Birthday" text, but then I thought, let's do something silly for my ex-good friend. So, well birthday girl, click that play button.</h1>
+        <button id="playBtn">PLAY</button>
+    </div>
+
+    <!-- MODE SELECT SCREEN -->
+    <div id="modeSelect">
+        <h1>well wait wait select a mode first</h1>
+        <img src="cosplay.jpg" id="cosplayBtn" alt="Cosplay mode">
+        <img src="concert.jpg" id="concertBtn" alt="Concert mode">
+        <img src="holi.jpg" id="holiBtn" alt="Holi mode">
+    </div>
+
+    <!-- Dialogue + Message need to live INSIDE the container -->
+    <div id="dialogueBox" class="dialogue-box">Happy 19th 🦜</div>
+    <div id="messageScreen"></div>
+</div>
+
+<audio id="bgMusic" src="bgmusic.mp3" loop></audio>
+
+<script>
+const VIRTUAL_WIDTH = 800;
+const VIRTUAL_HEIGHT = 600;
+
+const displayCanvas = document.getElementById('gameCanvas');
+const displayCtx = displayCanvas.getContext('2d');
+
+const offscreenCanvas = document.createElement('canvas');
+offscreenCanvas.width = VIRTUAL_WIDTH;
+offscreenCanvas.height = VIRTUAL_HEIGHT;
+const ctx = offscreenCanvas.getContext('2d');
+
+const ui = document.getElementById('ui');
+const playBtn = document.getElementById('playBtn');
+const modeSelect = document.getElementById('modeSelect');
+const dialogueBox = document.getElementById('dialogueBox');
+const messageScreen = document.getElementById('messageScreen');
+const bgMusic = document.getElementById('bgMusic');
+
+let scale = 1;
+let animationId;
+let currentScene = 'title';
+let sceneTimer = 0;
+const guySpeed = 21;
+let shopOrder = [5, 0, 4, 3, 6, 2, 1];
+let currentShopIndex = 0;
+let guyX = 100;
+let walkingFrame = 0;
+let endingGuyX = 0;
+let selectedMode = null;
+
+const images = {};
+let imagePaths = {
+    guyWalkingAlone: 'start.jpg',
+    girlWaitingAlone: 'end.png',
+    sevenElevenShop: 'seven11.png',
+    momosAddaShop: 'momos.png',
+    laPinozPizzaShop: 'lapinoz.png',
+    yevleChaiShop: 'yevle chai.png',
+    burgerKingShop: 'burger.png',
+    waffleShop: 'waffleshop.png',
+    naturalsShop: 'Naturals.jpg'
+};
+
+function setMode(mode) {
+    selectedMode = mode;
+    if (mode === 'cosplay') {
+        imagePaths.guyWalkingAlone = "cosplay1.jpg";
+        imagePaths.girlWaitingAlone = "cosplay2.jpg";
+    } else if (mode === 'concert') {
+        imagePaths.guyWalkingAlone = "concert1.jpg";
+        imagePaths.girlWaitingAlone = "concert2.jpg";
+    } else if (mode === 'holi') {
+        imagePaths.guyWalkingAlone = "holi1.png";
+        imagePaths.girlWaitingAlone = "holi2.jpg";
+    }
+    loadImages();
+    modeSelect.style.display = 'none';
+    currentScene = 'walking';
+    sceneTimer = 0;
+    guyX = -150;
+    currentShopIndex = 0;
+    bgMusic.play().catch(()=>{});
+}
+
+function resizeGame() {
+    const container = document.getElementById('gameContainer');
+    const windowRatio = window.innerWidth / window.innerHeight;
+    const gameRatio = VIRTUAL_WIDTH / VIRTUAL_HEIGHT;
+
+    if (windowRatio > gameRatio) {
+        scale = window.innerHeight / VIRTUAL_HEIGHT;
+    } else {
+        scale = window.innerWidth / VIRTUAL_WIDTH;
+    }
+
+    displayCanvas.width = VIRTUAL_WIDTH * scale;
+    displayCanvas.height = VIRTUAL_HEIGHT * scale;
+    container.style.width = displayCanvas.width + "px";
+    container.style.height = displayCanvas.height + "px";
+}
+window.addEventListener('resize', resizeGame);
+resizeGame();
+
+function loadImages() {
+    let loaded = 0;
+    const total = Object.keys(imagePaths).length;
+    for (const key in imagePaths) {
+        const img = new Image();
+        img.onload = () => {
+            images[key] = img;
+            loaded++;
+            if (loaded === total && selectedMode) gameLoop();
+        };
+        img.src = imagePaths[key];
+    }
+}
+
+function drawBackground() {
+    if (selectedMode === 'concert') {
+        ctx.fillStyle = '#001028';
+        ctx.fillRect(0, 0, 800, 400);
+        ctx.fillStyle = '#FFF';
+        for (let i = 0; i < 30; i++) {
+            ctx.fillRect(Math.random()*800, Math.random()*300, 2, 2);
+        }
+    } else {
+        ctx.fillStyle = '#5C94FC';
+        ctx.fillRect(0, 0, 800, 400);
+        ctx.fillStyle = '#FFF';
+        for (let i = 0; i < 4; i++) {
+            const x = i * 200 + 50;
+            const y = 50 + Math.sin(Date.now() * 0.001 + i) * 10;
+            drawCloud(x, y);
+        }
+    }
+    ctx.fillStyle = '#00AA00';
+    ctx.fillRect(0, 400, 800, 200);
+    ctx.fillStyle = '#008800';
+    for (let x = 0; x < 800; x += 40) {
+        for (let y = 400; y < 600; y += 40) {
+            if ((x + y) % 80 === 0) ctx.fillRect(x, y, 20, 20);
+        }
+    }
+}
+
+function drawCloud(x, y) {
+    ctx.beginPath();
+    ctx.arc(x, y, 20, 0, Math.PI * 2);
+    ctx.arc(x + 25, y, 25, 0, Math.PI * 2);
+    ctx.arc(x + 50, y, 20, 0, Math.PI * 2);
+    ctx.arc(x + 25, y - 15, 20, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function drawGuyOnScooter(x, y, frame=0) {
+    if (images.guyWalkingAlone) {
+        const bobbing = Math.sin(frame * 1.5) * 5;
+        ctx.drawImage(images.guyWalkingAlone, x, y+bobbing, 96, 180);
+    }
+}
+function drawGirlSitting(x,y) {
+    if (images.girlWaitingAlone) ctx.drawImage(images.girlWaitingAlone, x, y, 76, 144);
+}
+function drawShop(shopIndex) {
+    const keys = ['sevenElevenShop','momosAddaShop','laPinozPizzaShop','yevleChaiShop','burgerKingShop','waffleShop','naturalsShop'];
+    const img = images[keys[shopIndex]];
+    if (img) ctx.drawImage(img, 200, 0, 400, 400);
+}
+
+function showDialogue(x, y) {
+    dialogueBox.style.display = 'block';
+    dialogueBox.style.left = (x * scale) + 'px';
+    dialogueBox.style.top = (y * scale) + 'px';
+}
+function hideDialogue(){ dialogueBox.style.display='none'; }
+
+function showMessage(){
+    bgMusic.pause(); // stop music at final message
+    messageScreen.innerHTML = ""; 
+
+    if (selectedMode === "cosplay") {
+        messageScreen.innerHTML = `
+            <p>thought about making you a greeting card like before, but then I remembered how your mom goes through your bag to take out your scarf and that is how i ended up doing this instead</p>
+            <p>So well, in the most nonchalant way possible for a moron like me</p>
+            <p>"Happy Birthday"</p>`;
+    } else if (selectedMode === "concert") {
+        messageScreen.innerHTML = `
+            <p>Well, ONE-NINE(do you get the reference? Varun Dhawan film hope that hint helped). Honestly, I was really hurt by the nonchalant ‘Happy Birthday’ text you sent. But I guess what matters in the end is that you remembered and wished. I so did not expect that yk considering the last few texts we shared So yeah, thank you for that it meant a lot</p>`;
+    } else if (selectedMode === "holi") {
+        messageScreen.innerHTML = `
+            <p>ik we don't talk no more </p>
+            <p> cuz well yk (i fucked up)</p>
+            <p>but it's your birthday...</p>
+            <p>So yeah… Happy mf’n Birthday, Bittu and tu me manques like alot </p>`;
+    }
+    messageScreen.style.display='flex';
+}
+
+function hideMessage(){ messageScreen.style.display='none'; }
+
+function gameLoop() {
+    ctx.clearRect(0,0,800,600);
+    sceneTimer += 1/60;
+    switch(currentScene) {
+        case 'walking':
+            drawBackground();
+            if (currentShopIndex < shopOrder.length) drawShop(shopOrder[currentShopIndex]);
+            walkingFrame += 0.5;
+            drawGuyOnScooter(guyX,280,walkingFrame);
+            guyX += guySpeed;
+            if (guyX>800) {
+                if (currentShopIndex<shopOrder.length-1) {
+                    currentShopIndex++; guyX=-150;
+                } else {
+                    currentScene='ending'; sceneTimer=0; endingGuyX=-150;
+                }
+            }
+            break;
+        case 'ending':
+            drawBackground();
+            drawGirlSitting(650,280);
+            if (endingGuyX < 550) {
+                walkingFrame += 0.5;
+                endingGuyX += guySpeed;
+                drawGuyOnScooter(endingGuyX,280,walkingFrame);
+            } else {
+                drawGuyOnScooter(550,280,0);
+                showDialogue(300,250);
+            }
+            if (sceneTimer>3 && sceneTimer<=8) {
+                hideDialogue(); showMessage();
+            } else if (sceneTimer>8) {
+                cancelAnimationFrame(animationId);
+                return;
+            }
+            break;
+    }
+    displayCtx.drawImage(offscreenCanvas,0,0,VIRTUAL_WIDTH*scale,VIRTUAL_HEIGHT*scale);
+    animationId=requestAnimationFrame(gameLoop);
+}
+
+playBtn.addEventListener('click',()=>{ ui.style.display='none'; modeSelect.style.display='flex'; });
+document.getElementById('cosplayBtn').addEventListener('click',()=>setMode('cosplay'));
+document.getElementById('concertBtn').addEventListener('click',()=>setMode('concert'));
+document.getElementById('holiBtn').addEventListener('click',()=>setMode('holi'));
+</script>
+</body>
+</html>
