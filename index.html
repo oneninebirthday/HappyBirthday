@@ -136,7 +136,7 @@
         <img src="holi.jpg" id="holiBtn" alt="Holi mode">
     </div>
 
-    <!-- Dialogue + Message need to live INSIDE the container -->
+    
     <div id="dialogueBox" class="dialogue-box">Happy 19th 🦜</div>
     <div id="messageScreen"></div>
 </div>
@@ -301,7 +301,7 @@ function showDialogue(x, y) {
 function hideDialogue(){ dialogueBox.style.display='none'; }
 
 function showMessage(){
-    bgMusic.pause(); // stop music at final message
+    bgMusic.pause(); 
     messageScreen.innerHTML = ""; 
 
     if (selectedMode === "cosplay") {
@@ -311,7 +311,8 @@ function showMessage(){
             <p>"Happy Birthday"</p>`;
     } else if (selectedMode === "concert") {
         messageScreen.innerHTML = `
-            <p>Well, ONE-NINE(do you get the reference? Varun Dhawan film hope that hint helped). Honestly, I was really hurt by the nonchalant ‘Happy Birthday’ text you sent. But I guess what matters in the end is that you remembered and wished. I so did not expect that yk considering the last few texts we shared So yeah, thank you for that it meant a lot</p>`;
+            <p>Well, ONE-NINE(do you get the reference? Varun Dhawan film? hope that hint helped).</p>
+            <p>TBH, I really didn’t expect you to wish me on my birthday, y’know, considering the last few texts we shared. But hey… you did. So yeah, thanks for that it honestly meant a lot.</p>`;
     } else if (selectedMode === "holi") {
         messageScreen.innerHTML = `
             <p>ik we don't talk no more </p>
@@ -372,3 +373,4 @@ document.getElementById('holiBtn').addEventListener('click',()=>setMode('holi'))
 </script>
 </body>
 </html>
+
