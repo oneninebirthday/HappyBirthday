@@ -60,7 +60,7 @@
     }
     #playBtn:hover { background: #ff5252; transform: scale(1.1); }
 
-    /* MODE SELECT STYLING */
+
     #modeSelect {
         top: 0; left: 0;
         width: 100%; height: 100%;
@@ -127,8 +127,7 @@
         <h1>I too was about to drop a nonchalant "Happy Birthday" text, but then I thought, let's do something silly for my ex-good friend. So, well birthday girl, click that play button.</h1>
         <button id="playBtn">PLAY</button>
     </div>
-
-    <!-- MODE SELECT SCREEN -->
+    
     <div id="modeSelect">
         <h1>well wait wait select a mode first</h1>
         <img src="cosplay.jpg" id="cosplayBtn" alt="Cosplay mode">
@@ -311,14 +310,14 @@ function showMessage(){
             <p>"Happy Birthday"</p>`;
     } else if (selectedMode === "concert") {
         messageScreen.innerHTML = `
-            <p>Well, ONE-NINE(do you get the reference? Varun Dhawan film? hope that hint helped).</p>
-            <p>TBH, I really didn’t expect you to wish me on my birthday, y’know, considering the last few texts we shared. But hey… you did. So yeah, thanks for that it honestly meant a lot.</p>`;
+            <p>Well, ONE-NINE(do you get the reference? Varun Dhawan film? hope that hint helped)</p>
+             <p>good ol' days lol</p>
+            <p>ok weird question, i know but i just felt like asking do you still have the greeting card i gave you, yk with the cat pictures and all, or did you like throw it away? </p>`;
     } else if (selectedMode === "holi") {
         messageScreen.innerHTML = `
             <p>ik we don't talk no more </p>
-            <p> cuz well yk (i fucked up)</p>
             <p>but it's your birthday...</p>
-            <p>So yeah… Happy mf’n Birthday, Bittu and tu me manques like alot </p>`;
+            <p>So yeah… Happy Birthday, Bittu and tu me manques like alot </p>`;
     }
     messageScreen.style.display='flex';
 }
@@ -373,4 +372,5 @@ document.getElementById('holiBtn').addEventListener('click',()=>setMode('holi'))
 </script>
 </body>
 </html>
+
 
